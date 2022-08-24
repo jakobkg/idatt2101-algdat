@@ -1,0 +1,41 @@
+#!/bin/bash
+
+runBenchmark() {
+    NUM_TESTS=$1
+    NUM_POINTS=$2
+
+    echo "Running $NUM_TESTS tests with $NUM_POINTS data points"
+
+    local SUM=0
+
+    for ((i = 0; i <= $NUM_TESTS; i++)); do
+        local SUM=$(($SUM+$(./aksjer $NUM_POINTS | awk '{print $NF}')))
+    done
+
+    local AVG=$(($SUM/$NUM_TESTS))
+
+    echo "Average time: $AVG µs"
+    echo
+}
+
+compile() {
+    if rustc aksjer.rs -O; then
+        echo "Compilation succeeded!"
+        echo
+    else
+        echo "Compilation failed, exiting"
+        exit
+    fi
+}
+
+if ! test -f "aksjer"; then
+    echo "No compiled binary found, compiling..."
+    compile
+else if test "aksjer.rs" -nt "aksjer"; then
+    echo "Source file is newer than binary, recompiling..."
+    compile
+    fi
+fi
+
+runBenchmark 100 1000
+runBenchmark 100 10000
