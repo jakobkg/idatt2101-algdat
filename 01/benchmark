@@ -38,4 +38,12 @@ else if test "aksjer.rs" -nt "aksjer"; then
 fi
 
 runBenchmark 100 1000
+runBenchmark 100 2000
+runBenchmark 100 3000
+runBenchmark 100 4000
+runBenchmark 100 5000
+runBenchmark 100 6000
+runBenchmark 100 7000
+runBenchmark 100 8000
+runBenchmark 100 9000
 runBenchmark 100 10000
