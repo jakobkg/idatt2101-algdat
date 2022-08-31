@@ -33,14 +33,19 @@ fn innebygd(x: f32, n: i32) -> Option<f32> {
 }
 
 // Hjelpefunksjon for avrunding av flyttall til et gitt antall desimaler
-fn rund(x: f32, desimaler: i32) -> f32 {
-    ((x * 10f32.powi(desimaler)).round()) / 10f32.powi(desimaler)
+fn rund(x: f32, desimaler: i32) -> Option<f32> {
+    if desimaler < 0 {
+        None
+    } else {
+        Some(((x * 10f32.powi(desimaler)).round()) / 10f32.powi(desimaler))
+    }
 }
 
 // Hjelpefunksjon for å teste om en potens-beregning er korrekt med et gitt antall desimalers presisjon
 fn bekreft(f: &dyn Fn(f32, i32) -> Option<f32>, x: f32, n: i32, desimaler: i32) {
-    print!("{x}^{n} = {}: ", rund(f(x, n).unwrap(), desimaler));
-    println!("{}", match rund(f(x, n).unwrap(), desimaler) == rund(x.powi(n), desimaler) {
+    let utregnet = rund(f(x, n).unwrap(), desimaler);
+    print!("{x}^{n} = {}: ", utregnet.unwrap());
+    println!("{}", match utregnet == rund(x.powi(n), desimaler) {
         true => "✔️",
         false => "❌"
     });
@@ -49,10 +54,10 @@ fn bekreft(f: &dyn Fn(f32, i32) -> Option<f32>, x: f32, n: i32, desimaler: i32) 
 // Hjelpefunksjon for å beregne tidsbruk av en annen funksjon ved å gjenta den i et sekund og telle kjøringer
 fn stoppeklokke(f: &dyn Fn(f32, i32) -> Option<f32>, x: f32, n: i32) {
     let start: Instant;
-    let mut end: Instant;
+    let mut slutt: Instant;
     let mut antall = 0;
 
-    let second = Duration::from_secs(1);
+    let sekund = Duration::from_secs(1);
 
     start = Instant::now();
 
@@ -60,9 +65,9 @@ fn stoppeklokke(f: &dyn Fn(f32, i32) -> Option<f32>, x: f32, n: i32) {
         f(x, n);
         antall += 1;
 
-        end = Instant::now();
+        slutt = Instant::now();
 
-        if end - start > second {
+        if slutt - start > sekund {
             break;
         }
     }
@@ -86,16 +91,23 @@ fn main() {
     println!();
 
     println!("Tidtaking av algoritme 1:");
+    stoppeklokke(&algoritme1, 1.1, 1000);
     stoppeklokke(&algoritme1, 1.1, 10000);
     stoppeklokke(&algoritme1, 1.1, 100000);
     println!();
 
     println!("Tidtaking av algoritme 2:");
+    stoppeklokke(&algoritme2, 1.1, 10);
+    stoppeklokke(&algoritme2, 1.1, 100);
+    stoppeklokke(&algoritme2, 1.1, 1000);
     stoppeklokke(&algoritme2, 1.1, 10000);
     stoppeklokke(&algoritme2, 1.1, 100000);
     println!();
 
     println!("Tidtaking av innebygd potens-metode:");
+    stoppeklokke(&innebygd, 1.1, 10);
+    stoppeklokke(&innebygd, 1.1, 100);
+    stoppeklokke(&innebygd, 1.1, 1000);
     stoppeklokke(&innebygd, 1.1, 10000);
     stoppeklokke(&innebygd, 1.1, 100000);
 }
