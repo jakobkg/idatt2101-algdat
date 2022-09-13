@@ -1,4 +1,5 @@
 use std::{fs::File, io::Read};
+use std::time::{Duration, Instant};
 
 trait IsSortedExt<T: Ord> {
     fn is_sorted(&self) -> bool;
@@ -45,12 +46,20 @@ fn generate_random(antall: usize, max: u32) -> Vec<u32> {
 }
 
 fn shellsort<T: Ord + Clone>(liste: &mut [T], sprik_faktor: f32) -> () {
-    let mut sprik_liste = vec![1];
-    while *sprik_liste.last().unwrap() < 3 * liste.len() / 4 {
-        sprik_liste.push((*sprik_liste.last().unwrap() as f32 * sprik_faktor) as usize);
+    let mut sprik_liste = vec![liste.len() / 2];
+
+    while *sprik_liste.last().unwrap() >= sprik_faktor.ceil() as usize {
+        sprik_liste.push((*sprik_liste.last().unwrap() as f32 / sprik_faktor) as usize);
     }
 
-    for sprik in sprik_liste.iter().rev() {
+    // Garanter at tallene for sprik slutter med [1, 0]
+    if *sprik_liste.last().unwrap() != 1 {
+        sprik_liste.push(1);
+    }
+
+    sprik_liste.push(0);
+
+    for sprik in sprik_liste.iter() {
         for i in *sprik..liste.len() {
             let mut j = i;
             let temp = liste[i].clone();
@@ -66,12 +75,30 @@ fn shellsort<T: Ord + Clone>(liste: &mut [T], sprik_faktor: f32) -> () {
 }
 
 fn main() {
-    println!("Genererer tall...");
-    let mut tilfeldig = generate_random(1_000_000, u32::max_value());
-    println!("Ferdig generert!");
+    let mut tilfeldig: Vec<u32>;
+    let mut start: Instant;
+    let mut slutt: Instant;
+    let mut tid;
 
-    println!("Sorterer...");
-    shellsort(&mut tilfeldig, 2.6);
+    const ANTALL_KJØRINGER: u32 = 5;
 
-    println!("Sortert: {}", tilfeldig.is_sorted());
+    let mut sprikverdier = vec![5.550];
+    while sprikverdier[sprikverdier.len() - 1] < 5.560 {
+        sprikverdier.push(sprikverdier[sprikverdier.len() - 1] + 0.001);
+    }
+
+    for i in sprikverdier {
+        tid = Duration::from_micros(0);
+        for _ in 0..ANTALL_KJØRINGER {
+            tilfeldig = generate_random(5_000_000, u32::max_value());
+        
+            start = Instant::now();
+            shellsort(&mut tilfeldig, i);
+            slutt = Instant::now();
+        
+            tid += slutt - start;
+        }
+        tid = tid / ANTALL_KJØRINGER;
+        println!("({i:.3}, {:#?}),", tid.as_millis());
+    }
 }
