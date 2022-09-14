@@ -20,29 +20,29 @@ impl IsSortedExt<u32> for Vec<u32> {
     }
 }
 
-fn generate_random(antall: usize, max: u32) -> Vec<u32> {
+fn tilfeldige_heltall(antall: usize, max: u32) -> Vec<u32> {
     // Opprett to vektorer, en som buffer for lesing fra /dev/urandom
     // og en for å oppbevare prisendringer
-    let mut filebuf = vec![0u8; 4 * antall];
-    let mut numbers =  vec![0u32; antall];
+    let mut filbuffer = vec![0u8; 4 * antall];
+    let mut tall =  vec![0u32; antall];
 
     // Gjør klar for å lese fra /dev/urandom
     let mut f = File::open("/dev/urandom")
-    .expect("/dev/urandom not available");
+    .expect("/dev/urandom ikke tilgjengelig");
 
     // Les bytes derfra (heltall i intervallet [0, 255])
-    f.read_exact(&mut filebuf)
-    .expect("/dev/urandom not available");
+    f.read_exact(&mut filbuffer)
+    .expect("/dev/urandom ikke tilgjengelig");
 
     // Kombiner disse med bit-manipulasjon til u32
     for i in 0..antall {
-        numbers[i] = ((filebuf[4 * i] as u32) << 24 |
-            (filebuf[4 * i + 1] as u32) << 16 |
-            (filebuf[4 * i + 2] as u32) << 8 |
-            (filebuf[4 * i + 3] as u32)) % max;
+        tall[i] = ((filbuffer[4 * i] as u32) << 24 |
+            (filbuffer[4 * i + 1] as u32) << 16 |
+            (filbuffer[4 * i + 2] as u32) << 8 |
+            (filbuffer[4 * i + 3] as u32)) % max;
     }
 
-    numbers
+    tall
 }
 
 fn shellsort<T: Ord + Clone>(liste: &mut [T], sprik_faktor: f32) -> () {
@@ -74,31 +74,26 @@ fn shellsort<T: Ord + Clone>(liste: &mut [T], sprik_faktor: f32) -> () {
     }
 }
 
-fn main() {
-    let mut tilfeldig: Vec<u32>;
-    let mut start: Instant;
-    let mut slutt: Instant;
-    let mut tid;
+fn tidtaking(n: usize, delingstall: f32) -> () {
+    let start: Instant;
+    let slutt: Instant;
+    let kjøretid: Duration;
 
-    const ANTALL_KJØRINGER: u32 = 5;
+    let mut tilfeldig = tilfeldige_heltall(n, u32::max_value());
 
-    let mut sprikverdier = vec![5.550];
-    while sprikverdier[sprikverdier.len() - 1] < 5.560 {
-        sprikverdier.push(sprikverdier[sprikverdier.len() - 1] + 0.001);
-    }
+    start = Instant::now();
+    shellsort(&mut tilfeldig, delingstall);
+    slutt = Instant::now();
 
-    for i in sprikverdier {
-        tid = Duration::from_micros(0);
-        for _ in 0..ANTALL_KJØRINGER {
-            tilfeldig = generate_random(5_000_000, u32::max_value());
-        
-            start = Instant::now();
-            shellsort(&mut tilfeldig, i);
-            slutt = Instant::now();
-        
-            tid += slutt - start;
-        }
-        tid = tid / ANTALL_KJØRINGER;
-        println!("({i:.3}, {:#?}),", tid.as_millis());
-    }
+    kjøretid = slutt - start;
+
+    println!("Kjøretid med n = {}: {} ms", n, kjøretid.as_millis());
+}
+
+fn main() {   
+    let delingstall = 5.556;
+
+    tidtaking(1_000_000, delingstall);
+    tidtaking(10_000_000, delingstall);
+    tidtaking(100_000_000, delingstall);
 }
