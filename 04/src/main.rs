@@ -1,35 +1,23 @@
-struct Node {
-    verdi: u8,
-    forrige: Option<Box<Node>>,
-    neste: Option<Box<Node>>,
+struct Siffer {
+    verdi: u32,
+    forrige: Option<*mut Siffer>,
+    neste: Option<*mut Siffer>,
 }
 
-impl Node {
-    pub fn new(verdi: u8, forrige: Option<Box<Node>>, neste: Option<Box<Node>>) -> Self {
-        Self {
-            verdi,
-            forrige,
-            neste
-        }
-    }
-
-    pub fn new_tail(verdi: u8, forrige: Option<Box<Node>>) -> Self {
-        Self {
-            verdi,
-            forrige,
-            neste: None
-        }
-    }
-
-    pub fn new_head(verdi: u8, neste: Option<Box<Node>>) -> Self {
-        Self {
-            verdi, 
-            forrige: None,
-            neste
+impl Siffer {
+    pub fn nytt(verdi: u32) -> Option<Self> {
+        if verdi > 9 {
+            None
+        } else {
+            Some(
+                Self {
+                    verdi,
+                    forrige: None,
+                    neste: None
+                }
+            )
         }
     }
 }
 
-fn main() {
-    println!("Hello, world!");
-}
+fn main() {}
