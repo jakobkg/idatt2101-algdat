@@ -15,7 +15,9 @@ struct Siffer {
 }
 
 impl Siffer {
-    // Konstruktør
+    /// Konstruktør, tar inn en verdi og genererer tilsvarende Siffer-objekt
+    /// Kan returnere None om verdien som gis ikke er et gyldig siffer
+    /// (mindre enn 0 eller større enn 9)
     pub fn new(verdi: u32) -> Option<Self> {
         // Pass på at et siffer bare har ett siffer
         if verdi > 9 {
@@ -31,7 +33,7 @@ impl Siffer {
 }
 
 impl Tall {
-    // Konstruktør
+    /// Konstruktør
     pub const fn new() -> Self {
         Self {
             første: None,
@@ -40,12 +42,12 @@ impl Tall {
         }
     }
 
-    // Hjelpemetode, sjekk om et Tall inneholder noen Siffer eller ikke
+    /// Hjelpemetode, sjekk om et Tall inneholder noen Siffer eller ikke
     pub fn er_tomt(&self) -> bool {
         self.første.is_none()
     }
 
-    // Sett inn et nytt Siffer på begynnelsen av et Tall (venstre)
+    /// Sett inn et nytt Siffer på begynnelsen av et Tall (venstre)
     pub fn sett_inn_foran(&mut self, verdi: u32) {
         let mut siffer = Box::new(match Siffer::new(verdi) {
             Some(siffer) => siffer,
@@ -67,7 +69,7 @@ impl Tall {
         }
     }
 
-    // Sett inn et nytt Siffer på slutten av et Tall (høyre)
+    /// Sett inn et nytt Siffer på slutten av et Tall (høyre)
     pub fn sett_inn_bak(&mut self, verdi: u32) {
         let mut siffer = Box::new(match Siffer::new(verdi) {
             Some(siffer) => siffer,
@@ -89,7 +91,7 @@ impl Tall {
         }
     }
 
-    // Opprett et Tall fra en String ved å iterere over bokstavene i String og konvertere dem til Siffer
+    /// Opprett et Tall fra en String ved å iterere over bokstavene i String og konvertere dem til Siffer
     pub fn fra_streng(streng: String) -> Self {
         let mut tall = Tall::new();
 

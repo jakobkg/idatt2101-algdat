@@ -108,19 +108,19 @@ For å ta tiden på sorteringer med ulike verdier for $s$ valgte jeg å generere
 
 Ved en måling av verdier for $s$ fra og med 1.1 med steg på 0.1 til og med 10.0, blir resultatene som vist i figur \ref{fig1}.
 
-![Plott av tidsmålinger for $s$ i intervallet [1.1, 10] \label{fig1}](plot_1-10_full.png){height=30%}
+![Plott av tidsmålinger for $s$ i intervallet [1.1, 10] \label{fig1}](illustrasjoner/plot_1-10_full.png){height=30%}
 
 For å unngå de store hoppene ved heltall for $s$ endret jeg intervallet til å ha steg på 0.2, slik at heltallsverdier for $s$ ikke blir brukt da disse virker å føre til ekstremt dårlig ytelse. Disse resultatene uten heltall kan sees i figur \ref{fig2}.
 
-![Plott av tidsmålinger for $s$ i intervallet [1.1, 10]\label{fig2}](plot_1-10_halvt.png){height=30%}
+![Plott av tidsmålinger for $s$ i intervallet [1.1, 10]\label{fig2}](illustrasjoner/plot_1-10_halvt.png){height=30%}
 
 Her ser det ut til at kjøretidene har en bunn i intervallet $[5, 7]$, og testing i dette intervallet med steg på 0.1 gir resultatene i figur \ref{fig3}
 
-![Plott av tidsmålinger for $s$ i intervallet [5, 7]\label{fig3}](plot_5-7.png){height=30%}
+![Plott av tidsmålinger for $s$ i intervallet [5, 7]\label{fig3}](illustrasjoner/plot_5-7.png){height=30%}
 
 Her ser det ut til at laveste kjøretid finnes mellom $s = 5.5$ og $s = 6$, og etter et par videre innsnevringer ender jeg på intervallet $s \in [5.55, 5.56]$. Resultatet av denne siste testen kan sees i figur \ref{fig4}, og viser at minste kjøretid *oppnås* med $s = 5.556$
 
-![Plott av tidsmålinger for $s$ i intervallet [5.55, 5.561]\label{fig4}](plot_5.55-5.56.png){height=30%}
+![Plott av tidsmålinger for $s$ i intervallet [5.55, 5.561]\label{fig4}](illustrasjoner/plot_5.55-5.56.png){height=30%}
 
 # Kompleksitetsmåling
 

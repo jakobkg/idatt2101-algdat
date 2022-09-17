@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ -z $(which pandoc) ]; then
+    echo Pandoc not found
+    exit 1
+fi
+
+cd $1
+
+pandoc rapport.md -o ../rapport.pdf -H ../templates/*

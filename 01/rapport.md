@@ -1,3 +1,8 @@
+---
+title: IDATT2101 Øving 2
+author: Jakob Grønhaug (jakobkg@stud.ntnu.no)
+---
+
 # IDATT2021 Øving 1
 Jakob Grønhaug (jakobkg@stud.ntnu.no)
 
