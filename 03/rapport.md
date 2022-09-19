@@ -1,6 +1,6 @@
 ---
-author: Jakob Grønhaug
 title: IDATT2101, Øving 3
+author: Jakob Grønhaug (jakobkg@stud.ntnu.no)
 ---
 
 # Shellsort

@@ -1,6 +1,6 @@
 ---
-author: Jakob Grønhaug
-title: IDATT2101, øving 4
+title: IDATT2101, Øving 4
+author: Jakob Grønhaug (jakobkg@stud.ntnu.no)
 ---
 
 # Oppgave 1: koblede lister

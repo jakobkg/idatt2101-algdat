@@ -1,5 +1,7 @@
+use std::collections::VecDeque;
 use std::{fs::File, io::Read};
 use std::time::{Duration, Instant};
+use std::thread::{self, JoinHandle};
 
 trait IsSortedExt<T: Ord> {
     fn is_sorted(&self) -> bool;
@@ -74,26 +76,52 @@ fn shellsort<T: Ord + Clone>(liste: &mut [T], sprik_faktor: f32) -> () {
     }
 }
 
-fn tidtaking(n: usize, delingstall: f32) -> () {
-    let start: Instant;
-    let slutt: Instant;
-    let kjøretid: Duration;
+fn tidtaking(n: usize, delingstall: f32, samples: u32) -> Duration {
+    let mut thread: thread::JoinHandle<Duration>;
+    let mut threads = VecDeque::<JoinHandle<Duration>>::new();
+    let mut totaltid = Duration::from_secs(0);
 
-    let mut tilfeldig = tilfeldige_heltall(n, u32::max_value());
+    for _ in 0..samples {
+        threads.push_back(thread::spawn(move || {
+            let start: Instant;
+            let slutt: Instant;
 
-    start = Instant::now();
-    shellsort(&mut tilfeldig, delingstall);
-    slutt = Instant::now();
+            let mut data = tilfeldige_heltall(n, u32::max_value());
 
-    kjøretid = slutt - start;
+            start = Instant::now();
+            shellsort(&mut data, delingstall);
+            slutt = Instant::now();
 
-    println!("Kjøretid med n = {}: {} ms", n, kjøretid.as_millis());
+            slutt - start
+        }))
+    }
+
+    while !threads.is_empty() {
+        thread = threads.pop_front().unwrap();
+
+        match thread.join() {
+            Ok(tid) => {totaltid = totaltid + tid},
+            Err(_) => {},
+        }
+    }
+
+    totaltid / samples
 }
 
 fn main() {   
     let delingstall = 5.556;
+    let n_list = [1_000_000, 2_000_000, 4_000_000, 8_000_000, 16_000_000, 32_000_000];
+    let mut tid: Duration;
 
-    tidtaking(1_000_000, delingstall);
-    tidtaking(10_000_000, delingstall);
-    tidtaking(100_000_000, delingstall);
+    println!("Delingstall: {delingstall}");
+
+    for n in n_list {
+        tid = tidtaking(n, delingstall, 5);// OBS: Antallet samples må være mindre
+                                                    // enn tilgjengelig antall CPU-kjerner.
+                                                    // Om det er for mange vil CPU scheduling
+                                                    // påvirke tidtakingen, da alle samples 
+                                                    // samles i parallelle tråder.
+        println!("Tid med n = {n}: {} ms", tid.as_millis());
+    }
+
 }
