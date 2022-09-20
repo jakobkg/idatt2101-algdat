@@ -71,6 +71,7 @@ impl<T: Ord + Display + Clone> Node<T> {
     pub fn vis(self, bredde: usize) -> () {
         let mut kø = VecDeque::<Node<T>>::new();
         let mut node: Node<T>;
+        let mut ikke_tom;
 
         let mut antall_noder: usize;
         let mut print_bredde = bredde;
@@ -80,16 +81,23 @@ impl<T: Ord + Display + Clone> Node<T> {
         while !kø.is_empty() {
             antall_noder = kø.len();
 
+            ikke_tom = false;
+
             while antall_noder > 0 {
                 node = kø.pop_front().unwrap();
 
                 match node {
-                    Node::Tom => {print!("{:^print_bredde$}", "");}
+                    Node::Tom => {
+                        print!("{:^print_bredde$}", "");
+                        kø.push_back(Node::Tom);
+                        kø.push_back(Node::Tom);
+                    }
                     Node::Node {
                         verdi,
                         ref venstre,
                         ref høyre,
                     } => {
+                        ikke_tom = true;
                         print!("{:^print_bredde$}", verdi);
                         kø.push_back(*venstre.clone());
                         kø.push_back(*høyre.clone());
@@ -97,6 +105,10 @@ impl<T: Ord + Display + Clone> Node<T> {
                 }
 
                 antall_noder -= 1;
+            }
+
+            if !ikke_tom {
+                break;
             }
 
             println!();
