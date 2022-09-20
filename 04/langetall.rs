@@ -195,6 +195,10 @@ impl std::ops::Add<Tall> for Tall {
                     }
                 }
             }
+
+            if mente != 0 {
+                sum.sett_inn_foran(mente);
+            }
         }
 
         sum
