@@ -21,7 +21,7 @@ impl DfsStatus {
         }
     }
 
-    pub fn besøk(&mut self, pos: usize) -> () {
+    pub fn sett_besøkt(&mut self, pos: usize) -> () {
         self.besøkt[pos] = true;
     }
 
@@ -146,7 +146,7 @@ impl Graf {
 
         for node in 0..self.antall_noder() {
             if !status.har_besøkt(node) {
-                status.besøk(node);
+                status.sett_besøkt(node);
                 self.besøk(node, &mut status, &mut rekkefølge);
                 rekkefølge.push_front(node);
             }
@@ -158,19 +158,9 @@ impl Graf {
     fn besøk(&self, pos: usize, status: &mut DfsStatus, rekkefølge: &mut VecDeque<usize>) {
         for nabo in &self.noder[pos] {
             if !status.har_besøkt(*nabo) {
-                status.besøk(*nabo);
+                status.sett_besøkt(*nabo);
                 self.besøk(*nabo, status, rekkefølge);
                 rekkefølge.push_front(*nabo);
-            }
-        }
-    }
-
-    fn traverser_og_print(&self, fra: usize, status: &mut DfsStatus) {
-        for nabo in &self.noder[fra] {
-            if !status.har_besøkt(*nabo) {
-                print!("{nabo} ");
-                status.besøk(*nabo);
-                self.traverser_og_print(*nabo, status);
             }
         }
     }
@@ -183,18 +173,33 @@ impl Graf {
 
         let mut status = DfsStatus::opprett(self.antall_noder());
         let rekkefølge = self.dfs();
-        let mut n = 1;
+        let mut n = 0;
+
+        let mut komponenter: Vec<VecDeque<usize>> = Vec::new();
 
         for node in rekkefølge {
             if !status.har_besøkt(node) {
-                print!("Komponent {n}: {node} ");
+                komponenter.push(VecDeque::new());
 
-                status.besøk(node);
-                invers.traverser_og_print(node, &mut status);
-
-                println!();
+                status.sett_besøkt(node);
+                komponenter[n].push_front(node);
+                invers.besøk(node, &mut status, &mut komponenter[n]);
                 n += 1;
             }
+        }
+
+        println!("Grafen har {} sterkt koblede komponenter", n);
+
+        n = 1;
+        for komponent in komponenter {
+            print!("Komponent {n}: ");
+
+            for node in komponent {
+                print!("{node} ");
+            }
+
+            println!();
+            n += 1;
         }
     }
 }
@@ -246,5 +251,6 @@ fn main() {
         println!("Graf:\n{graf}");
         println!("DFS-rekkefølge: {:?}", graf.dfs());
     }
+    
     graf.print_komponenter();
 }
