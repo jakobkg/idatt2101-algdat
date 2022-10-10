@@ -287,7 +287,6 @@ fn main() {
 
     if graf.antall_noder() < 100 {
         println!("Graf:\n{graf}");
-        println!("DFS-rekkefølge: {:?}", graf.dfs());
     }
 
     graf.print_komponenter();
