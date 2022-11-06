@@ -1,8 +1,3 @@
-use std::{
-    env::args,
-    process::exit,
-};
-
 mod fil {
     use std::{
         fs::File,
@@ -208,69 +203,168 @@ mod huffman {
     use std::collections::BinaryHeap;
     use typer::ByteFrekvens;
 
+    use typer::Node;
+
+    use self::typer::Hopp;
+
     mod typer {
         use std::cmp::Ordering;
 
         #[derive(Debug)]
         pub struct ByteFrekvens {
             byte: u8,
-            frekvens: u32
+            frekvens: u32,
         }
-    
+
         impl ByteFrekvens {
             pub fn ny(byte: u8) -> Self {
-                Self {
-                    byte,
-                    frekvens: 0
-                }
+                Self { byte, frekvens: 0 }
             }
-    
+
             pub fn øk(&mut self) -> () {
                 self.frekvens += 1;
             }
         }
-    
-        impl Ord for ByteFrekvens {
+
+        #[derive(Clone, Copy, Debug)]
+        pub enum Hopp {
+            Venstre,
+            Høyre,
+        }
+
+        #[derive(Debug)]
+        pub struct Node {
+            pub frekvens: u32,
+            pub verdi: Option<u8>,
+            pub venstre: Option<Box<Node>>,
+            pub høyre: Option<Box<Node>>,
+        }
+
+        impl Node {
+            pub fn ny(
+                frekvens: u32,
+                verdi: Option<u8>,
+                venstre: Box<Node>,
+                høyre: Box<Node>,
+            ) -> Self {
+                Self {
+                    frekvens,
+                    verdi: verdi,
+                    venstre: Some(venstre),
+                    høyre: Some(høyre),
+                }
+            }
+
+            pub fn fra_frekvens(bytefrekvens: &ByteFrekvens) -> Self {
+                Self {
+                    frekvens: bytefrekvens.frekvens,
+                    verdi: Some(bytefrekvens.byte),
+                    venstre: None,
+                    høyre: None,
+                }
+            }
+        
+            pub fn finn_node(&self, verdi: u8, resultat: &mut Vec<Hopp>) -> bool {
+                let mut res: bool = false;
+
+                if Some(verdi) == self.verdi {
+                    res = true;
+                }
+
+                match &self.venstre {
+                    Some(venstre) => {
+                        resultat.push(Hopp::Venstre);
+
+                        if venstre.finn_node(verdi, resultat) {
+                            res = true;
+                        } else {
+                            resultat.pop();
+                        }
+                    },
+                    None => {},
+                };
+
+                match &self.høyre {
+                    Some(høyre) => {
+                        resultat.push(Hopp::Høyre);
+
+                        if høyre.finn_node(verdi, resultat) {
+                            res = true;
+                        } else {
+                            resultat.pop();
+                        }
+                    },
+                    None => {},
+                };
+
+                return res;
+            }
+        }
+
+        impl Ord for Node {
             fn cmp(&self, other: &Self) -> Ordering {
-                let natural = self.frekvens.cmp(&other.frekvens);
-    
-                match natural {
+                let naturlig = self.frekvens.cmp(&other.frekvens);
+
+                match naturlig {
                     std::cmp::Ordering::Less => Ordering::Greater,
                     std::cmp::Ordering::Equal => Ordering::Equal,
                     std::cmp::Ordering::Greater => Ordering::Less,
                 }
             }
         }
-        
-        impl Eq for ByteFrekvens {}
-    
-        impl PartialOrd for ByteFrekvens {
+
+        impl Eq for Node {}
+
+        impl PartialOrd for Node {
             fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
                 Some(self.cmp(other))
             }
         }
-    
-        impl PartialEq for ByteFrekvens {
+
+        impl PartialEq for Node {
             fn eq(&self, other: &Self) -> bool {
                 self.frekvens == other.frekvens
             }
         }
-    
     }
-    
+
     pub fn komprimer(data: &[u8]) -> Vec<u8> {
         let mut komprimert: Vec<u8> = Vec::new();
 
-        let mut frekvenser = frekvenser(data);
+        let frekvenser = finn_frekvenser(data);
+        let noder = lag_noder(&frekvenser);
 
-        let mut kø = BinaryHeap::from(frekvenser);
+        let mut kø = BinaryHeap::from(noder);
+        let mut ny_node;
+        let mut venstre;
+        let mut høyre;
 
-        println!("{kø:?}");
+        // Bygg Huffman-tre ved å kombinere de to minst vanlige verdiene i køen til en forelder-node
+        // og putte denne tilbake i køen til det kun er en enkelt node igjen som er rota i treet
+        while kø.len() > 1 {
+            venstre = kø.pop().unwrap(); // Unwrap er trygt her, while-kondisjonen garanterer at køen ikke er tom
+            høyre = kø.pop().unwrap();
 
+            ny_node = Node::ny(
+                venstre.frekvens + høyre.frekvens,
+                None,
+                Box::new(venstre),
+                Box::new(høyre),
+            );
+
+            kø.push(ny_node)
+        }
+
+        let tre = kø.pop().unwrap(); // Trygg unwrap siden løkken over garanterer at køen har nøyaktig ett element igjen
+
+        let mut sti: Vec<Hopp> = Vec::new();
+        tre.finn_node(101u8, &mut sti);
+
+        println!("{sti:?}");
         komprimert
     }
 
-    fn frekvenser(data: &[u8]) -> Vec<ByteFrekvens> {
+    fn finn_frekvenser(data: &[u8]) -> Vec<ByteFrekvens> {
         let mut frekvenser: Vec<ByteFrekvens> = Vec::new();
 
         let mut data = Vec::from(data);
@@ -291,7 +385,19 @@ mod huffman {
             }
         }
 
+        frekvenser.push(frekvens);
+
         frekvenser
+    }
+
+    fn lag_noder(frekvenser: &Vec<ByteFrekvens>) -> Vec<Node> {
+        let mut resultat: Vec<Node> = Vec::new();
+
+        for frekvens in frekvenser {
+            resultat.push(Node::fra_frekvens(frekvens));
+        }
+
+        resultat
     }
 }
 
