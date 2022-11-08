@@ -1,4 +1,3 @@
-
 use std::{env::args, process::exit};
 
 #[macro_export]
@@ -205,9 +204,7 @@ mod lz77 {
 mod huffman {
     use std::collections::BinaryHeap;
 
-    use typer::Node;
-
-    use typer::{ByteFrekvens, Hopp};
+    use self::typer::{ByteFrekvens, Hopp, Node};
 
     mod typer {
         use std::cmp::Ordering;
