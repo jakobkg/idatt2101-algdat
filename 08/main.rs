@@ -1,5 +1,6 @@
 use std::{env::args, process::exit};
 
+
 #[macro_export]
 macro_rules! get_og_iterer {
     ( $arr:ident, $idx:ident ) => {
@@ -13,9 +14,11 @@ macro_rules! get_og_iterer {
     };
 }
 
-mod huffman;
-mod lz77;
 mod fil;
+#[macro_use]
+mod huffman;
+#[macro_use]
+mod lz77;
 
 fn print_hjelp(args: Vec<String>) {
     println!("Kunne ikke tolke argumentene!");
@@ -109,14 +112,12 @@ fn main() {
     // Utfør aktuell handling
     match handling {
         Handling::Komprimer => {
-            // Komprimer først med Lempel-Ziv
-            data = lz77::komprimer(&data);
-            // Deretter med Huffman
             data = huffman::komprimer(&data);
-        }
+            data = lz77::komprimer(&data);
+        },
+        
         Handling::Dekomprimer => {
-            // Dekomprimer ved å først bruke Huffman
-            data = match huffman::dekomprimer(&data) {
+            data = match lz77::dekomprimer(&data) {
                 Ok(data) => data,
                 Err(melding) => {
                     println!("{melding}");
@@ -124,8 +125,7 @@ fn main() {
                 }
             };
 
-            // Deretter Lempel-Ziv
-            data = match lz77::dekomprimer(&data) {
+            data = match huffman::dekomprimer(&data) {
                 Ok(data) => data,
                 Err(melding) => {
                     println!("{melding}");
@@ -135,7 +135,6 @@ fn main() {
         }
     };
 
-    // Skriv så resultatet til angitt fil
     match fil::skriv_bytes(&output, &data) {
         Ok(_) => {}
         Err(melding) => {

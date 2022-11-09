@@ -91,13 +91,7 @@ pub fn dekomprimer(data: &[u8]) -> Result<Vec<u8>, String> {
     let mut headerbytes: [u8; 2] = [0, 0];
     let mut byte: u8;
 
-    loop {
-        // Sjekk om det fremdeles er data igjen i input, bryt løkken om det ikke er det
-        match data.get(posisjon) {
-            Some(_) => {}
-            None => break,
-        }
-
+    while posisjon < data.len() {
         for i in 0..2 {
             byte = get_og_iterer!(data, posisjon);
             headerbytes[i] = byte;
