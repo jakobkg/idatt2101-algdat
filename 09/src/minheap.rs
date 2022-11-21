@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 pub trait Vektet {
     fn vekt(&self) -> usize;
 
@@ -19,11 +17,9 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
     }
 
     pub fn fra_liste(data: &[T]) -> Self {
-        let mut heap = Self { data: Vec::new() };
+        let mut heap = Self { data: data.to_vec() };
 
-        for &node in data {
-            heap.push(node);
-        }
+        heap.lag_heap();
 
         heap
     }
@@ -33,7 +29,7 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
     }
 
     pub fn er_tom(&self) -> bool {
-        self.peek().is_none()
+        self.len() > 0
     }
 
     fn over(indeks: usize) -> Option<usize> {
@@ -69,7 +65,7 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
         }
     }
 
-    pub fn lag_heap(&mut self) {
+    fn lag_heap(&mut self) {
         let mut i = self.data.len() / 2;
         while i > 0 {
             i -= 1;
@@ -92,15 +88,8 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
         self.fiks_heap(indeks);
     }
 
-    pub fn peek(&self) -> Option<T> {
-        match self.data.get(0) {
-            Some(&node) => Some(node),
-            None => None,
-        }
-    }
-
     pub fn pop(&mut self) -> Option<T> {
-        if self.data.len() > 0 {
+        if !self.data.is_empty() {
             let retval = self.data[0];
 
             self.data[0] = self.data[self.data.len() - 1];

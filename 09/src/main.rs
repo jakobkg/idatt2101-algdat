@@ -3,7 +3,7 @@ mod minheap;
 use std::process::exit;
 
 use graf::Graf;
-use minheap::{MinHeap, Vektet};
+use minheap::{Vektet};
 
 impl Vektet for usize {
     fn vekt(&self) -> usize {
@@ -24,5 +24,8 @@ fn main() {
         }
     };
 
-    graf.dijkstra_veivalg(2580232, 6376978);
+    match graf.finn_vei(3430400, 7425499) {
+        Ok(_) => {},
+        Err(e) => {println!("{e}")},
+    }
 }

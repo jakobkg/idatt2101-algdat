@@ -11,21 +11,24 @@ pub struct Graf {
     noder: Vec<Node>,
 }
 
+#[derive(Clone)]
 pub struct Node {
     id: usize,
     lengdegrad: f64,
     breddegrad: f64,
     kanter: Vec<Kant>,
+    estimat: Option<Avstand>,
 }
 
 #[derive(Clone, Copy)]
 pub struct Kant {
     fra: usize,
     til: usize,
-    vekt: Avstand,
+    kjøretid: usize,
+    avstand: Avstand,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
 pub enum Avstand {
     Verdi(usize),
     Uendelig,
@@ -44,7 +47,7 @@ impl Add for Avstand {
         }
 
         // Om en eller to av avstandene er uendelige er resultatet også uendelig
-        return Avstand::Uendelig;
+        Avstand::Uendelig
     }
 }
 
@@ -111,16 +114,22 @@ impl Node {
             lengdegrad,
             breddegrad,
             kanter: Vec::new(),
+            estimat: None,
         }
+    }
+
+    pub fn sett_estimat(&mut self, estimat: Avstand) {
+        self.estimat = Some(estimat);
     }
 }
 
 impl Kant {
-    pub fn opprett(fra: usize, til: usize, vekt: usize) -> Self {
+    pub fn opprett(fra: usize, til: usize, kjøretid: usize, avstand: usize) -> Self {
         Self {
             fra,
             til,
-            vekt: Avstand::Verdi(vekt),
+            kjøretid,
+            avstand: Avstand::Verdi(avstand),
         }
     }
 }
@@ -141,75 +150,71 @@ impl Graf {
     pub fn fra_filer(nodefil: &str, kantfil: &str) -> Result<Self, String> {
         let nodefil_handle = match File::open(nodefil) {
             Ok(handle) => handle,
-            Err(_) => return Err(format!("Kunne ikke åpne node-filen")),
+            Err(_) => return Err("Kunne ikke åpne node-filen".into()),
         };
 
         let mut leser = BufReader::new(nodefil_handle);
         let mut buffer = String::new();
 
-        let forventet_antall_noder;
         let mut lest_antall_noder: usize = 0;
 
         // Opprett en tom graf
         let mut graf = Graf::opprett();
 
         // Les første linje fra filen, som skal inneholde antallet noder
-        match leser.read_line(&mut buffer) {
+        let forventet_antall_noder = match leser.read_line(&mut buffer) {
             Ok(_) => {
                 let strbuf: Vec<&str> = buffer.split_whitespace().collect();
 
                 // Les antallet noder og lagre verdien
-                forventet_antall_noder = match strbuf[0].parse::<usize>() {
+                match strbuf[0].parse::<usize>() {
                     Ok(num) => num,
                     Err(_) => {
-                        return Err(format!("Kunne ikke lese antall noder fra starten av filen"));
+                        return Err("Kunne ikke lese antall noder fra starten av filen".into());
                     }
-                };
+                }
             }
-            Err(_) => return Err(format!("Kunne ikke lese første linje fra filen")),
+            Err(_) => return Err("Kunne ikke lese første linje fra filen".into()),
         };
 
         // Les resten av filen linje for linje, der hver linje representerer en node
         for (linjenummer, linje) in leser.lines().enumerate() {
-            match linje {
-                Ok(linje) => {
-                    let buf: Vec<&str> = linje.split_whitespace().collect();
+            if let Ok(linje) = linje {
+                let buf: Vec<&str> = linje.split_whitespace().collect();
 
-                    // Les ID til noden på linjen
-                    let id = match buf[0].parse::<usize>() {
-                        Ok(id) => id,
-                        Err(_) => {
-                            return Err(format!(
-                                "Kunne ikke lese node-id fra linje {linjenummer}: {linje}"
-                            ))
-                        }
-                    };
+                // Les ID til noden på linjen
+                let id = match buf[0].parse::<usize>() {
+                    Ok(id) => id,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese node-id fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
 
-                    // Les nodens lengdegrad
-                    let lengdegrad = match buf[1].parse::<f64>() {
-                        Ok(lengdegrad) => lengdegrad,
-                        Err(_) => {
-                            return Err(format!(
-                                "Kunne ikke lese lengdegrad fra linje {linjenummer}: {linje}"
-                            ))
-                        }
-                    };
+                // Les nodens lengdegrad
+                let lengdegrad = match buf[1].parse::<f64>() {
+                    Ok(lengdegrad) => lengdegrad,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese lengdegrad fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
 
-                    // Les nodens breddegrad
-                    let breddegrad = match buf[2].parse::<f64>() {
-                        Ok(breddegrad) => breddegrad,
-                        Err(_) => {
-                            return Err(format!(
-                                "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
-                            ))
-                        }
-                    };
+                // Les nodens breddegrad
+                let breddegrad = match buf[2].parse::<f64>() {
+                    Ok(breddegrad) => breddegrad,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
 
-                    // Legg til den nye noden i grafen
-                    graf.push_node(Node::opprett(id, lengdegrad, breddegrad));
-                    lest_antall_noder += 1;
-                }
-                Err(_) => {}
+                // Legg til den nye noden i grafen
+                graf.push_node(Node::opprett(id, lengdegrad, breddegrad));
+                lest_antall_noder += 1;
             }
         }
 
@@ -220,41 +225,37 @@ impl Graf {
         // SAMME GREIA MEN FOR KANTER, ORKET IKKE LAGE EN GENERISK METODE
         let kantfil_handle = match File::open(kantfil) {
             Ok(handle) => handle,
-            Err(_) => return Err(format!("Kunne ikke åpne kant-filen")),
+            Err(_) => return Err("Kunne ikke åpne kant-filen".into()),
         };
 
         leser = BufReader::new(kantfil_handle);
         buffer = String::new();
 
-        let forventet_antall_kanter;
         let mut lest_antall_kanter: usize = 0;
 
         // Les første linje fra filen, som skal inneholde antallet kanter
-        match leser.read_line(&mut buffer) {
+        let forventet_antall_kanter = match leser.read_line(&mut buffer) {
             Ok(_) => {
                 let strbuf: Vec<&str> = buffer.split_whitespace().collect();
 
                 // Les antallet noder og lagre verdien
-                forventet_antall_kanter = match strbuf[0].parse::<usize>() {
+                match strbuf[0].parse::<usize>() {
                     Ok(num) => num,
                     Err(_) => {
-                        return Err(format!(
-                            "Kunne ikke lese antall kanter fra starten av filen"
-                        ));
+                        return Err("Kunne ikke lese antall kanter fra starten av filen".into());
                     }
-                };
+                }
             }
-            Err(_) => return Err(format!("Kunne ikke lese første linje fra filen")),
+            Err(_) => return Err("Kunne ikke lese første linje fra filen".into()),
         };
 
         // Les resten av filen linje for linje, der hver linje representerer en kant
         for (linjenummer, linje) in leser.lines().enumerate() {
-            match linje {
-                Ok(linje) => {
-                    let buf: Vec<&str> = linje.split_whitespace().collect();
+            if let Ok(linje) = linje {
+                let buf: Vec<&str> = linje.split_whitespace().collect();
 
-                    // Les hvilken node denne kanten går fra
-                    let fra = match buf[0].parse::<usize>() {
+                // Les hvilken node denne kanten går fra
+                let fra = match buf[0].parse::<usize>() {
                         Ok(fra) => fra,
                         Err(_) => {
                             return Err(format!(
@@ -263,8 +264,8 @@ impl Graf {
                         }
                     };
 
-                    // Les hvilken node denne kanten går til
-                    let til = match buf[1].parse::<usize>() {
+                // Les hvilken node denne kanten går til
+                let til = match buf[1].parse::<usize>() {
                         Ok(til) => til,
                         Err(_) => {
                             return Err(format!(
@@ -273,21 +274,29 @@ impl Graf {
                         }
                     };
 
-                    // Les kantens vekt
-                    let vekt = match buf[2].parse::<usize>() {
-                        Ok(vekt) => vekt,
-                        Err(_) => {
-                            return Err(format!(
-                                "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
-                            ))
-                        }
-                    };
+                // Les kantens kjøretid
+                let kjøretid = match buf[2].parse::<usize>() {
+                    Ok(kjøretid) => kjøretid,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
 
-                    // Legg til den nye noden i grafen
-                    graf.push_kant(Kant::opprett(fra, til, vekt));
-                    lest_antall_kanter += 1;
-                }
-                Err(_) => {}
+                // Les kantens avstand
+                let avstand = match buf[3].parse::<usize>() {
+                    Ok(avstand) => avstand,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
+
+                // Legg til den nye noden i grafen
+                graf.push_kant(Kant::opprett(fra, til, kjøretid, avstand));
+                lest_antall_kanter += 1;
             }
         }
 
@@ -298,13 +307,12 @@ impl Graf {
         Ok(graf)
     }
 
-    pub fn dijkstra_veivalg(&self, fra: usize, til: usize) -> Result<Vec<Node>, String> {
-        let start: &Node = match self.noder.get(fra) {
-            Some(node) => node,
-            None => return Err(format!("Node {fra} finnes ikke i grafen")),
-        };
+    pub fn finn_vei(&mut self, fra: usize, til: usize) -> Result<Vec<Node>, String> {
+        let start = &self.noder[fra];
+        let start = start.clone();
+        let mål = &self.noder[til];
+        let mål = mål.clone();
 
-        let mut node: &Node;
         let mut korteste: Køelement;
 
         let mut avstander: Vec<Avstand> = vec![Avstand::Uendelig; self.noder.len()];
@@ -313,43 +321,73 @@ impl Graf {
         let mut forløpere: Vec<Option<usize>> = vec![None; self.noder.len()];
 
         let mut kø: MinHeap<Køelement> = MinHeap::opprett();
-        let mut besøkt: Vec<usize> = Vec::new();
-        besøkt.push(fra);
 
-        for nodeid in 0..self.noder.len() {
-            if nodeid != fra {
-                kø.push(Køelement { avstand: Avstand::Uendelig, node: nodeid });
-            } else {
-                kø.push(Køelement { avstand: Avstand::Verdi(0), node: fra });
-            }
-        }
+        kø.push(Køelement {
+            avstand: Avstand::Verdi(0),
+            node: start.id,
+        });
 
         while !kø.er_tom() {
             korteste = kø.pop().unwrap();
-            node = &self.noder[korteste.node];
+            let node = &self.noder[korteste.node];
+            let node = node.clone();
 
-            println!("{}, {}", node.lengdegrad, node.breddegrad);
-            
+            // println!("{}, {}", node.lengdegrad, node.breddegrad);
+
             if node.id == til {
-                break
+                break;
             }
 
             for kant in node.kanter.iter() {
-                let ny_avstand = kant.vekt + avstander[node.id];
+                let mut ny_avstand = avstander[node.id] + kant.avstand;
+
+                match self.noder[kant.til].estimat {
+                    Some(estimat) => ny_avstand += estimat,
+                    None => {
+                        let estimat = f64::sqrt(
+                            (self.noder[kant.til].breddegrad - mål.breddegrad).powi(2)
+                                + (self.noder[kant.til].lengdegrad - mål.lengdegrad).powi(2),
+                        )
+                        .round() as usize;
+
+                        self.noder[kant.til].sett_estimat(Avstand::Verdi(estimat));
+                    }
+                }
 
                 if ny_avstand < avstander[kant.til] {
                     avstander[kant.til] = ny_avstand;
                     forløpere[kant.til] = Some(kant.fra);
 
-                    if let Some(idx) = kø.finn_element(&Køelement { avstand: Avstand::Uendelig, node: kant.til }) {
+                    if let Some(idx) = kø.finn_element(&Køelement {
+                        avstand: Avstand::Uendelig,
+                        node: kant.til,
+                    }) {
                         if let Avstand::Verdi(vekt) = ny_avstand {
-                            kø.endre_vekt(idx, vekt);
+                            if kø.endre_vekt(idx, vekt).is_err() {
+                                return Err(String::new());
+                            }
                         }
+                    } else {
+                        kø.push(Køelement {
+                            avstand: ny_avstand,
+                            node: kant.til,
+                        });
                     }
                 }
             }
         }
 
-        Err(format!("lol"))
+        let mut forrige = Some(til);
+
+        while forrige.is_some() {
+            println!(
+                "{}, {}",
+                self.noder[forrige.unwrap()].lengdegrad,
+                self.noder[forrige.unwrap()].breddegrad
+            );
+            forrige = forløpere[forrige.unwrap()];
+        }
+
+        Err(String::new())
     }
 }
