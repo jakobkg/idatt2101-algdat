@@ -86,7 +86,7 @@ impl Vektet for Køelement {
 
 impl PartialEq for Køelement {
     fn eq(&self, other: &Self) -> bool {
-        self.avstand == other.avstand
+        self.node == other.node
     }
 }
 
@@ -299,15 +299,17 @@ impl Graf {
     }
 
     pub fn dijkstra_veivalg(&self, fra: usize, til: usize) -> Result<Vec<Node>, String> {
-        let start: Node = match self.noder.get(fra) {
-            Some(&node) => node,
+        let start: &Node = match self.noder.get(fra) {
+            Some(node) => node,
             None => return Err(format!("Node {fra} finnes ikke i grafen")),
         };
 
-        let mut node: Node;
+        let mut node: &Node;
         let mut korteste: Køelement;
 
-        let mut avstander: Vec<Option<Avstand>> = vec![None; self.noder.len()];
+        let mut avstander: Vec<Avstand> = vec![Avstand::Uendelig; self.noder.len()];
+        avstander[fra] = Avstand::Verdi(0);
+
         let mut forløpere: Vec<Option<usize>> = vec![None; self.noder.len()];
 
         let mut kø: MinHeap<Køelement> = MinHeap::opprett();
@@ -324,12 +326,30 @@ impl Graf {
 
         while !kø.er_tom() {
             korteste = kø.pop().unwrap();
-            node = self.noder[korteste.node];
+            node = &self.noder[korteste.node];
 
-            for kant in node.kanter {
-                todo!()
+            println!("{}, {}", node.lengdegrad, node.breddegrad);
+            
+            if node.id == til {
+                break
+            }
+
+            for kant in node.kanter.iter() {
+                let ny_avstand = kant.vekt + avstander[node.id];
+
+                if ny_avstand < avstander[kant.til] {
+                    avstander[kant.til] = ny_avstand;
+                    forløpere[kant.til] = Some(kant.fra);
+
+                    if let Some(idx) = kø.finn_element(&Køelement { avstand: Avstand::Uendelig, node: kant.til }) {
+                        if let Avstand::Verdi(vekt) = ny_avstand {
+                            kø.endre_vekt(idx, vekt);
+                        }
+                    }
+                }
             }
         }
 
+        Err(format!("lol"))
     }
 }

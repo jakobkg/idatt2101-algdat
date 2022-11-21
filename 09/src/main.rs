@@ -16,11 +16,13 @@ impl Vektet for usize {
 }
 
 fn main() {
-    let mut graf = match Graf::fra_filer("norden-noder", "norden-kanter") {
+    let mut graf = match Graf::fra_filer("noder.txt", "kanter.txt") {
         Ok(graf) => graf,
         Err(grunn) => {
             println!("{grunn}");
             exit(1);
         }
     };
+
+    graf.dijkstra_veivalg(2580232, 6376978);
 }

@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 pub trait Vektet {
     fn vekt(&self) -> usize;
 
@@ -31,7 +33,7 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
     }
 
     pub fn er_tom(&self) -> bool {
-        self.peek().is_some()
+        self.peek().is_none()
     }
 
     fn over(indeks: usize) -> Option<usize> {
@@ -124,6 +126,14 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
         } else {
             Err(())
         }
+    }
+
+    pub fn finn_element(&self, element: &T) -> Option<usize>{
+        if !self.data.contains(element) {
+            return None
+        }
+
+        self.data.iter().position(|e| e == element)
     }
 
     fn vekt_opp(&mut self, indeks: usize, vekt: usize) {
