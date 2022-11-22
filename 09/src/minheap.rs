@@ -29,7 +29,7 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
     }
 
     pub fn er_tom(&self) -> bool {
-        self.len() > 0
+        self.len() == 0
     }
 
     fn over(indeks: usize) -> Option<usize> {
@@ -104,16 +104,13 @@ impl<T: Ord + Copy + Vektet> MinHeap<T> {
         }
     }
 
-    pub fn endre_vekt(&mut self, indeks: usize, vekt: usize) -> Result<(), ()> {
+    pub fn endre_vekt(&mut self, indeks: usize, vekt: usize) {
         if indeks < self.data.len() {
             if vekt > self.data[indeks].vekt() {
                 self.vekt_opp(indeks, vekt);
             } else {
                 self.vekt_ned(indeks, vekt);
             }
-            Ok(())
-        } else {
-            Err(())
         }
     }
 

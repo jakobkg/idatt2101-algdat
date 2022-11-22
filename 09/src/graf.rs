@@ -14,50 +14,49 @@ pub struct Graf {
 #[derive(Clone)]
 pub struct Node {
     id: usize,
-    lengdegrad: f64,
-    breddegrad: f64,
+    pub lengdegrad: f64,
+    pub breddegrad: f64,
     kanter: Vec<Kant>,
-    estimat: Option<Avstand>,
+    estimat: Option<Kjøretid>,
 }
 
 #[derive(Clone, Copy)]
 pub struct Kant {
     fra: usize,
     til: usize,
-    kjøretid: usize,
-    avstand: Avstand,
+    kjøretid: Kjøretid,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
-pub enum Avstand {
+pub enum Kjøretid {
     Verdi(usize),
     Uendelig,
 }
 
-impl Add for Avstand {
-    type Output = Avstand;
+impl Add for Kjøretid {
+    type Output = Kjøretid;
 
     fn add(self, rhs: Self) -> Self::Output {
         // Hvis begge de to avstandene har tall-verdier
-        if let Avstand::Verdi(venstre) = self {
-            if let Avstand::Verdi(høyre) = rhs {
+        if let Kjøretid::Verdi(venstre) = self {
+            if let Kjøretid::Verdi(høyre) = rhs {
                 // Summer dem
-                return Avstand::Verdi(venstre + høyre);
+                return Kjøretid::Verdi(venstre + høyre);
             }
         }
 
         // Om en eller to av avstandene er uendelige er resultatet også uendelig
-        Avstand::Uendelig
+        Kjøretid::Uendelig
     }
 }
 
-impl AddAssign for Avstand {
+impl AddAssign for Kjøretid {
     fn add_assign(&mut self, rhs: Self) {
         *self = self.add(rhs);
     }
 }
 
-impl Display for Avstand {
+impl Display for Kjøretid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Self::Verdi(verdi) = self {
             write!(f, "{}", verdi)
@@ -69,13 +68,13 @@ impl Display for Avstand {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Køelement {
-    pub avstand: Avstand,
+    pub kjøretid: Kjøretid,
     pub node: usize,
 }
 
 impl Vektet for Køelement {
     fn vekt(&self) -> usize {
-        if let Avstand::Verdi(vekt) = self.avstand {
+        if let Kjøretid::Verdi(vekt) = self.kjøretid {
             vekt
         } else {
             usize::MAX
@@ -83,7 +82,7 @@ impl Vektet for Køelement {
     }
 
     fn sett_vekt(&mut self, vekt: usize) {
-        self.avstand = Avstand::Verdi(vekt)
+        self.kjøretid = Kjøretid::Verdi(vekt)
     }
 }
 
@@ -97,13 +96,13 @@ impl Eq for Køelement {}
 
 impl PartialOrd for Køelement {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.avstand.partial_cmp(&other.avstand)
+        self.kjøretid.partial_cmp(&other.kjøretid)
     }
 }
 
 impl Ord for Køelement {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.avstand.partial_cmp(&other.avstand).unwrap()
+        self.kjøretid.partial_cmp(&other.kjøretid).unwrap()
     }
 }
 
@@ -118,18 +117,17 @@ impl Node {
         }
     }
 
-    pub fn sett_estimat(&mut self, estimat: Avstand) {
+    pub fn sett_estimat(&mut self, estimat: Kjøretid) {
         self.estimat = Some(estimat);
     }
 }
 
 impl Kant {
-    pub fn opprett(fra: usize, til: usize, kjøretid: usize, avstand: usize) -> Self {
+    pub fn opprett(fra: usize, til: usize, kjøretid: usize) -> Self {
         Self {
             fra,
             til,
-            kjøretid,
-            avstand: Avstand::Verdi(avstand),
+            kjøretid: Kjøretid::Verdi(kjøretid),
         }
     }
 }
@@ -192,22 +190,22 @@ impl Graf {
                     }
                 };
 
-                // Les nodens lengdegrad
-                let lengdegrad = match buf[1].parse::<f64>() {
-                    Ok(lengdegrad) => lengdegrad,
-                    Err(_) => {
-                        return Err(format!(
-                            "Kunne ikke lese lengdegrad fra linje {linjenummer}: {linje}"
-                        ))
-                    }
-                };
-
                 // Les nodens breddegrad
-                let breddegrad = match buf[2].parse::<f64>() {
+                let breddegrad = match buf[1].parse::<f64>() {
                     Ok(breddegrad) => breddegrad,
                     Err(_) => {
                         return Err(format!(
                             "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
+                        ))
+                    }
+                };
+
+                // Les nodens lengdegrad
+                let lengdegrad = match buf[2].parse::<f64>() {
+                    Ok(lengdegrad) => lengdegrad,
+                    Err(_) => {
+                        return Err(format!(
+                            "Kunne ikke lese lengdegrad fra linje {linjenummer}: {linje}"
                         ))
                     }
                 };
@@ -284,18 +282,8 @@ impl Graf {
                     }
                 };
 
-                // Les kantens avstand
-                let avstand = match buf[3].parse::<usize>() {
-                    Ok(avstand) => avstand,
-                    Err(_) => {
-                        return Err(format!(
-                            "Kunne ikke lese vekt fra linje {linjenummer}: {linje}"
-                        ))
-                    }
-                };
-
                 // Legg til den nye noden i grafen
-                graf.push_kant(Kant::opprett(fra, til, kjøretid, avstand));
+                graf.push_kant(Kant::opprett(fra, til, kjøretid));
                 lest_antall_kanter += 1;
             }
         }
@@ -313,63 +301,73 @@ impl Graf {
         let mål = &self.noder[til];
         let mål = mål.clone();
 
-        let mut korteste: Køelement;
-
-        let mut avstander: Vec<Avstand> = vec![Avstand::Uendelig; self.noder.len()];
-        avstander[fra] = Avstand::Verdi(0);
+        let mut kjøretider: Vec<Kjøretid> = vec![Kjøretid::Uendelig; self.noder.len()];
+        kjøretider[fra] = Kjøretid::Verdi(0);
 
         let mut forløpere: Vec<Option<usize>> = vec![None; self.noder.len()];
 
         let mut kø: MinHeap<Køelement> = MinHeap::opprett();
 
         kø.push(Køelement {
-            avstand: Avstand::Verdi(0),
+            kjøretid: Kjøretid::Verdi(0),
             node: start.id,
         });
 
         while !kø.er_tom() {
-            korteste = kø.pop().unwrap();
+            let korteste = kø.pop().unwrap();
             let node = &self.noder[korteste.node];
             let node = node.clone();
 
-            // println!("{}, {}", node.lengdegrad, node.breddegrad);
+            // println!("{}, {}", node.breddegrad, node.lengdegrad);
 
             if node.id == til {
                 break;
             }
 
             for kant in node.kanter.iter() {
-                let mut ny_avstand = avstander[node.id] + kant.avstand;
+                let mut ny_kjøretid = kjøretider[node.id] + kant.kjøretid;
 
                 match self.noder[kant.til].estimat {
-                    Some(estimat) => ny_avstand += estimat,
+                    Some(estimat) => ny_kjøretid += estimat,
                     None => {
-                        let estimat = f64::sqrt(
-                            (self.noder[kant.til].breddegrad - mål.breddegrad).powi(2)
-                                + (self.noder[kant.til].lengdegrad - mål.lengdegrad).powi(2),
-                        )
-                        .round() as usize;
+                        // Haversine
+                        let diameter = (2 * 6371) as f64;
+                        let b1b2 = (self.noder[kant.til].breddegrad - mål.breddegrad).to_radians();
+                        let cosb1cosb2 = self.noder[kant.til].breddegrad.to_radians().cos()
+                            * mål.breddegrad.to_radians().cos();
+                        let l1l2 = (self.noder[kant.til].lengdegrad - mål.lengdegrad).to_radians();
+                        let estimat = Kjøretid::Verdi(
+                            match ((diameter * f64::asin(f64::sqrt((b1b2 / 2.0).sin().powi(2) + cosb1cosb2 * (l1l2 / 2.0).sin().powi(2)))) as usize).checked_mul(0)
+                            {
+                                Some(tid) => {tid},
+                                None => {
+                                    return Err(
+                                        "Estimert kjøretid fra node til mål fikk ikke plass i en 64-bits integer".into()
+                                    )
+                                }
+                            },
+                        );
 
-                        self.noder[kant.til].sett_estimat(Avstand::Verdi(estimat));
+                        self.noder[kant.til].sett_estimat(estimat);
+
+                        ny_kjøretid += estimat;
                     }
                 }
 
-                if ny_avstand < avstander[kant.til] {
-                    avstander[kant.til] = ny_avstand;
+                if ny_kjøretid < kjøretider[kant.til] {
+                    kjøretider[kant.til] = ny_kjøretid;
                     forløpere[kant.til] = Some(kant.fra);
 
                     if let Some(idx) = kø.finn_element(&Køelement {
-                        avstand: Avstand::Uendelig,
+                        kjøretid: Kjøretid::Uendelig,
                         node: kant.til,
                     }) {
-                        if let Avstand::Verdi(vekt) = ny_avstand {
-                            if kø.endre_vekt(idx, vekt).is_err() {
-                                return Err(String::new());
-                            }
+                        if let Kjøretid::Verdi(ny_kjøretid) = ny_kjøretid {
+                            kø.endre_vekt(idx, ny_kjøretid);
                         }
                     } else {
                         kø.push(Køelement {
-                            avstand: ny_avstand,
+                            kjøretid: ny_kjøretid,
                             node: kant.til,
                         });
                     }
@@ -379,15 +377,15 @@ impl Graf {
 
         let mut forrige = Some(til);
 
+        let mut vei: Vec<Node> = Vec::new();
+
         while forrige.is_some() {
-            println!(
-                "{}, {}",
-                self.noder[forrige.unwrap()].lengdegrad,
-                self.noder[forrige.unwrap()].breddegrad
-            );
+            vei.push(self.noder[forrige.unwrap()].clone());
             forrige = forløpere[forrige.unwrap()];
         }
 
-        Err(String::new())
+        vei.reverse();
+
+        Ok(vei)
     }
 }

@@ -3,7 +3,7 @@ mod minheap;
 use std::process::exit;
 
 use graf::Graf;
-use minheap::{Vektet};
+use minheap::Vektet;
 
 impl Vektet for usize {
     fn vekt(&self) -> usize {
@@ -24,8 +24,12 @@ fn main() {
         }
     };
 
-    match graf.finn_vei(3430400, 7425499) {
-        Ok(_) => {},
+    match graf.finn_vei(7425499, 3430400) {
+        Ok(vei) => {
+            for node in vei {
+                println!("{}, {}", node.breddegrad, node.lengdegrad);
+            }
+        },
         Err(e) => {println!("{e}")},
     }
 }
